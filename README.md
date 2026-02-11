@@ -526,12 +526,12 @@ Raw conversational text is transformed as follows:
 
 Example transformation:
 
-Input : [t1, t2, t3, t4]
-Target : [t5]
-Input : [t1, t2, t3, t4,t5]
-Target : [t6]
-Input : [t1, t2, t3, t4,t5,t6]
-Target : [t7]
+Input : [t1, t2, t3, t4] 
+Target : [t5] 
+Input : [t1, t2, t3, t4,t5] 
+Target : [t6] 
+Input : [t1, t2, t3, t4,t5,t6] 
+Target : [t7] 
 
 
 The model predicts the next token at every position.
