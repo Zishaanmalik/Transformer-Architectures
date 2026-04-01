@@ -6,8 +6,9 @@ The implementations include:
 
 - **BERT - Encoder-Only Transformer**
 - **GPT-2 - Decoder-Only Transformer**
+- **OCR-VIT - Encoder-Decoder Transformer**
 
-Both architectures are written as structured class-based modules where each layer corresponds to a clearly defined mathematical operation. The attention mechanism is implemented through explicit query, key, and value projections; scaling factors are applied manually; masks are constructed at tensor level; and multi-head aggregation is performed through controlled reshaping and concatenation. Feed-forward layers, normalization blocks, and residual connections are integrated in the exact order defined within the notebooks.
+these architectures are written as structured class-based modules where each layer corresponds to a clearly defined mathematical operation. The attention mechanism is implemented through explicit query, key, and value projections; scaling factors are applied manually; masks are constructed at tensor level; and multi-head aggregation is performed through controlled reshaping and concatenation. Feed-forward layers, normalization blocks, and residual connections are integrated in the exact order defined within the notebooks.
 
 The implementation maintains transparency over:
 
@@ -390,43 +391,10 @@ Saved under `models/` directory:
 - `mask.pth`
 - `mybert.pth`
 
----
-
-# GPT - Generative Pretrained Transformer (Decoder-Only)
-
-## Overview
-
-This implementation builds GPT from first principles using modular components:
-
-- Token + Positional Embedding
-- Masked Self-Attention (Causal Attention)
-- Multi-Head Attention
-- Residual + Layer Normalization
-- Feed Forward Network
-- Stacked Decoder Blocks
-- Language Modeling Head
-
-Training is performed using **Autoregressive Next-Token Prediction** on a conversational dataset consisting of:
-  
-- Human ↔ AI prompt-response pairs
-- dataset download code is present in file `GPT-2.ipynb`
-
-The training pipeline, causal masking logic, architecture, and parameter statistics are derived directly from the implementation.
 
 ---
-
-# Model Storage Notice
-
-Due to file size constraints:
-
-- Model weights are not stored inside the repository.
-- 
-Saved files:
-- `GPT.pth`             model size: **368 MB**
-- `GPT_outlayer.pth`    model size: **114 MB**
-- `MY_GPT.pth`          model size: **482 MB**
-
 ---
+
 
 # GPT - Generative Pretrained Transformer (Decoder-Only)
 
