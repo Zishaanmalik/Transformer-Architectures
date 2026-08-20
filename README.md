@@ -6,7 +6,10 @@ The implementations include:
 
 - **BERT - Encoder-Only Transformer**
 - **GPT-2 - Decoder-Only Transformer**
-- **OCR-VIT - Encoder-Decoder Transformer**
+- **Confomer - Encoder-Decoder Transformer**
+- **OCR-VIT - Encoder-Decoder Transformer(Optical Character Recognition)**
+- **ASR - Encoder-Decoder Transformer(Audio Signal Recognition)**
+- **BSR - Encoder-Decoder Transformer(Brain Signal Recognition)**
 
 these architectures are written as structured class-based modules where each layer corresponds to a clearly defined mathematical operation. The attention mechanism is implemented through explicit query, key, and value projections; scaling factors are applied manually; masks are constructed at tensor level; and multi-head aggregation is performed through controlled reshaping and concatenation. Feed-forward layers, normalization blocks, and residual connections are integrated in the exact order defined within the notebooks.
 
