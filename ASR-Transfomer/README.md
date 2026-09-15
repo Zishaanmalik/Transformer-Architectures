@@ -1,4 +1,4 @@
-# ASR-Transformer — Encoder-Decoder Transformer (Automatic Speech Recognition)
+# ASR-Transformer — Encoder-Decoder Transformer (Audio Speech Recognition)
 
 ## Overview
 
