@@ -2,29 +2,28 @@
 
 ## Overview
 
-This implementation builds GPT-2 from first principles using modular components:
+A from-scratch, decoder-only Transformer following the GPT-2 recipe: causal (masked) self-attention stacked 12 deep, trained with next-token prediction on Human ↔ AI conversational data. Every sub-layer is hand-written `nn.Module` code; no `transformers` library is used for the model itself.
 
-- Token + Positional Embedding
-- Masked Self-Attention (Causal Attention)
-- Multi-Head Attention
-- Residual + Layer Normalization
-- Feed Forward Network
-- Stacked Decoder Blocks
-- Attention-Pooled Output Head
-
-Training is performed using **Autoregressive Next-Token Prediction** on a conversational dataset of Human ↔ AI prompt-response pairs (`Dahoas/instruct-human-assistant-prompt`, loaded via `pandas.read_parquet` from the HuggingFace hub). Dataset download code is present in the notebook.
+**Dataset:** `Dahoas/instruct-human-assistant-prompt` (loaded via `pandas.read_parquet` directly from the HuggingFace hub, saved locally as `human_prompt.csv`).
 
 ---
 
-## Model Storage Notice
+## Data Pipeline
 
-Due to file size constraints, model weights are not stored inside the repository.
+1. **Sentence normalization** of the raw prompt/response text.
+2. **Tokenization** into integer IDs (vocabulary size 38,987).
+3. **Fixed-length sequence chunking** — text is cut into a context window.
+4. **Input–target shifted pairs** are created for autoregressive training:
 
-| File | Size |
-|---|---|
-| `GPT.pth` | 368 MB |
-| `GPT_outlayer.pth` | 114 MB |
-| `MY_GPT.pth` | 482 MB |
+```
+Input : [t1, t2, t3, t4]               Target : [t5]
+Input : [t1, t2, t3, t4, t5]           Target : [t6]
+Input : [t1, t2, t3, t4, t5, t6]       Target : [t7]
+```
+
+This produces a `CustomDataset(x, y)` where each `x[idx]` is a prefix and `y[idx]` is the token that should follow it, loaded through `DataLoader(batch_size=4, shuffle=True)`.
+
+> Note: this chunking scheme differs from the typical GPT training setup of predicting *every* position in parallel across a fixed window — here each example is a single (prefix → next-token) pair. This is consistent with how the model's output head works (see `GPT2OutputHead` below), which pools the whole sequence into one vector and predicts a single next token per forward pass rather than one prediction per position.
 
 ---
 
@@ -33,163 +32,206 @@ Due to file size constraints, model weights are not stored inside the repository
 | Parameter | Value |
 |---|---|
 | Vocabulary Size | 38,987 |
-| Embedding Dimension | 768 |
+| Embedding Dimension (`embdim`) | 768 |
 | Number of Attention Heads | 12 |
 | Head Dimension | 64 (768 / 12) |
-| Feed Forward Hidden Dimension | 3,072 |
+| Feed Forward Hidden Dimension | 3,072 (per the documented hyperparameter table; the `GPT2` class default argument is 2048 unless overridden) |
 | Number of Decoder Blocks | 12 |
 | Max Sequence Length | 128 |
-| Dropout | 0.1 |
+| Dropout | 0.1 (documented; not wired into the attention/FFN modules themselves — see below) |
 | Optimizer | Adam |
 | Learning Rate | 6e-4 |
-| Training Objective | Causal Language Modeling |
+| Batch Size | 4 |
+| Epochs | 1 |
 
 ---
 
 ## Parameter Statistics
 
-### Base GPT (Decoder Stack Only)
+**Base GPT (decoder stack only):** 96,109,824 total/trainable parameters, 145 parameter tensors, 100% trainable.
 
-| Metric | Value |
-|---|---|
-| Total Parameters | 96,109,824 |
-| Trainable Parameters | 96,109,824 |
-| Parameter Tensors | 145 |
-| All Parameters Trainable | True |
-
-### Full Model (GPT + Output Head)
-
-| Metric | Value |
-|---|---|
-| Total Parameters | 126,091,596 |
-| Trainable Parameters | 126,091,596 |
-| Parameter Tensors | 149 |
-| All Parameters Trainable | True |
+**Full model (GPT + output head):** 126,091,596 total/trainable parameters, 149 parameter tensors, 100% trainable.
 
 ---
 
-## Training Data
+## Architecture — Component by Component
 
-**Dataset Type:** Human ↔ AI conversational prompt data
+### 1. `embpos` — Token Embedding + Sinusoidal Positional Encoding
 
-**Preprocessing Pipeline:**
+```python
+class embpos(nn.Module):
+    def __init__(self, vocab_size, embdim, max_len=512):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, embdim)
+        pe = torch.zeros(max_len, embdim)
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, embdim, 2) * (-math.log(10000.0) / embdim))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer("pe", pe.unsqueeze(0))
 
-1. Sentence normalization
-2. Tokenization
-3. Conversion to integer token IDs
-4. Fixed-length sequence chunking (context window)
-5. Creation of input-target shifted pairs
-
-Example transformation:
-
-```
-Input : [t1, t2, t3, t4]              Target : [t5]
-Input : [t1, t2, t3, t4, t5]          Target : [t6]
-Input : [t1, t2, t3, t4, t5, t6]      Target : [t7]
-```
-
-The model predicts the next token at every position. Dataset is wrapped by `CustomDataset(x, y)` and loaded via `DataLoader(batch_size=4, shuffle=True)`.
-
----
-
-## Architecture Flow
-
-### 1. Embedding + Positional Encoding
-
-**Module:** `embpos(vocab_size, embdim)`
-
-- Embedding dimension: 768, positional embedding: sinusoidal (precomputed)
-- Input: `(B, T)` → Output: `(B, T, 768)`
-
-### 2. Masked Self-Attention (Causal Attention)
-
-**Class:** `MaskedSelfAttention(embdim)`
-
-- `Wq`, `Wk`, `Wv`: `Linear(768 → 768)`, scale = `sqrt(64)`
-- Causal mask via `torch.tril`, masked positions set to `-inf` before softmax.
-
-```
-scores = QK^T / sqrt(D)
-scores = scores.masked_fill(mask == 0, -inf)
-weights = softmax(scores)
-output = weights @ V
+    def forward(self, x):
+        B, T = x.size()
+        emb = self.embedding(x)
+        emb = emb + self.pe[:, :T, :].to(emb.device)
+        return emb
 ```
 
-### 3. Multi-Head Attention
+Identical construction to the BERT notebook's `embpos`: learned token embedding table + fixed (non-trainable) sinusoidal positional table, added together. `(B, T)` → `(B, T, 768)`.
 
-**Class:** `MultiHeadAttention(embdim=768, num_heads=12)`
+### 2. `MaskedSelfAttention` — Single-Head Causal Attention (utility/reference block)
 
-- Combined `qkv = Linear(768 → 3*768)`, split into 12 heads of dim 64
-- Causal mask applied per head, outputs concatenated, `out = Linear(768 → 768)`
-- Input/Output: `(B, T, 768)`
+```python
+class MaskedSelfAttention(nn.Module):
+    def __init__(self, embdim):
+        super().__init__()
+        self.Wq = nn.Linear(embdim, embdim)
+        self.Wk = nn.Linear(embdim, embdim)
+        self.Wv = nn.Linear(embdim, embdim)
+        self.scale = math.sqrt(embdim)
 
-### 4. Residual + Layer Normalization
-
-**Class:** `AddResidual_LayerNorm(768)`
-
-```
-x + sublayer(LayerNorm(x))
-```
-
-### 5. Feed Forward Network
-
-**Class:** `FeedForward(768, 3072)`
-
-```
-Linear(768 → 3072) → GELU → Linear(3072 → 768)
-```
-
-### 6. Decoder Block
-
-**Class:** `DecoderBlock(embdim=768, num_heads=12, ff_hidden_dim=3072)`
-
-```
-x = attn_norm(x, mha)
-x = ff_norm(x, ff)
+    def forward(self, x):
+        B, T, D = x.size()
+        Q, K, V = self.Wq(x), self.Wk(x), self.Wv(x)
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / self.scale
+        mask = torch.tril(torch.ones(T, T, device=x.device))   # lower-triangular = causal
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+        weights = F.softmax(scores, dim=-1)
+        return torch.matmul(weights, V)
 ```
 
-### 7. Stacked Decoder — GPT-2 Core
+Defined as a standalone single-head reference implementation of causal attention; the model itself uses the fused multi-head version below.
 
-**Class:** `GPT2(vocab_size, embdim=768, num_heads=12, ff_hidden_dim=2048, num_layers=12)`
+### 3. `MultiHeadAttention` — Causal Multi-Head Attention (fused QKV)
 
+```python
+class MultiHeadAttention(nn.Module):
+    def __init__(self, embdim, num_heads):
+        super().__init__()
+        assert embdim % num_heads == 0
+        self.num_heads = num_heads
+        self.head_dim = embdim // num_heads
+        self.qkv = nn.Linear(embdim, 3 * embdim)   # single fused projection
+        self.out = nn.Linear(embdim, embdim)
+
+    def forward(self, x):
+        B, T, D = x.shape
+        qkv = self.qkv(x)                          # (B, T, 3D)
+        q, k, v = qkv.chunk(3, dim=-1)
+
+        q = q.view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
+        k = k.view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
+        v = v.view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
+
+        scores = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        mask = torch.tril(torch.ones(T, T, device=x.device))
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+
+        attn = F.softmax(scores, dim=-1)
+        out = attn @ v
+        out = out.transpose(1, 2).contiguous().view(B, T, D)
+        return self.out(out)
 ```
-x = embedding(x)
-for layer in layers:
-    x = layer(x)
-return x
+
+Unlike BERT's per-head-independent-weights design, GPT-2's multi-head attention here uses the more conventional approach: **one shared `Linear(768 → 3*768)` projection** produces Q, K, V together, which are then split into 12 heads of dimension 64. A `torch.tril` lower-triangular mask enforces that position `i` can only attend to positions `≤ i`, giving the model its autoregressive (causal) property.
+
+### 4. `AddResidual_LayerNorm` / `FeedForward` / `DecoderBlock`
+
+Structurally identical pattern to BERT's encoder block, but with `MultiHeadAttention` being causally masked:
+
+```python
+class FeedForward(nn.Module):
+    def __init__(self, embdim, hidden_dim):
+        super().__init__()
+        self.output_linear = nn.Sequential(nn.Linear(embdim, hidden_dim), nn.GELU(), nn.Linear(hidden_dim, embdim))
+    def forward(self, x):
+        return self.output_linear(x)
+
+class DecoderBlock(nn.Module):
+    def __init__(self, embdim, num_heads, ff_hidden_dim):
+        super().__init__()
+        self.mha = MultiHeadAttention(embdim, num_heads)
+        self.ff = FeedForward(embdim, ff_hidden_dim)
+        self.attn_norm = AddResidual_LayerNorm(embdim)
+        self.ff_norm = AddResidual_LayerNorm(embdim)
+
+    def forward(self, x):
+        x = self.attn_norm(x, self.mha)   # x + CausalMHA(LayerNorm(x))
+        x = self.ff_norm(x, self.ff)      # x + FFN(LayerNorm(x))
+        return x
 ```
 
-Input: `(B, T)` → Output: `(B, T, 768)`
+(Note: `FeedForward` here uses `GELU` activation, whereas BERT's `FeedForward` used `ReLU` — a small but real difference between the two notebooks.)
 
-### 8. Output Head
+### 5. `GPT2` — Stacked Decoder Core
 
-**Class:** `AttentionPooling(embdim)` + `GPT2OutputHead(embdim, vocab_size)`
+```python
+class GPT2(nn.Module):
+    def __init__(self, vocab_size, embdim=768, num_heads=12, ff_hidden_dim=2048, num_layers=12):
+        super().__init__()
+        self.emb = embpos(vocab_size, embdim)
+        self.layers = nn.ModuleList([DecoderBlock(embdim, num_heads, ff_hidden_dim) for _ in range(num_layers)])
 
-- `AttentionPooling`: learns a per-token score, softmax-weights and sums token representations into a single pooled vector `(B, D)`.
-- `GPT2OutputHead`: `fc = Linear(768 → vocab_size)` applied to the pooled vector.
-
+    def forward(self, x):
+        x = self.emb(x)
+        for layer in self.layers:
+            x = layer(x)
+        return x   # (B, T, 768)
 ```
-pooled = AttentionPooling(hidden)   # (B, 768)
-logits = fc(pooled)                 # (B, vocab_size)
+
+12 stacked causal decoder blocks — the same structural pattern GPT-family models use, reimplemented from scratch.
+
+### 6. `AttentionPooling` + `GPT2OutputHead` — Sequence-Pooled Output Head
+
+```python
+class AttentionPooling(nn.Module):
+    def __init__(self, embdim):
+        super().__init__()
+        self.score = nn.Linear(embdim, 1)
+
+    def forward(self, x):
+        weights = self.score(x)                 # (B, T, 1) — a learned scalar score per token
+        weights = torch.softmax(weights, dim=1)   # softmax over the T (sequence) dimension
+        pooled = (weights * x).sum(dim=1)         # (B, D) — weighted sum of all token vectors
+        return pooled
+
+class GPT2OutputHead(nn.Module):
+    def __init__(self, embdim, vocab_size):
+        super().__init__()
+        self.pool = AttentionPooling(embdim)
+        self.fc = nn.Linear(embdim, vocab_size)
+
+    def forward(self, hidden):
+        pooled = self.pool(hidden)   # (B, 768) — the ENTIRE sequence collapsed to one vector
+        logits = self.fc(pooled)     # (B, vocab_size)
+        return logits
 ```
 
-### 9. Final Model Wrapper
+**Architectural note:** this is a deliberate departure from the standard GPT language-modeling head (which normally applies `Linear(embdim → vocab_size)` at *every* position to get `(B, T, vocab_size)` per-token next-token logits). Here, an attention-pooling layer first learns a scalar importance score for every token in the sequence, softmaxes those scores across the time dimension, and computes a single weighted-average vector representing the whole sequence. The vocabulary projection is then applied **once** to that pooled vector, producing a single `(B, vocab_size)` prediction per input sequence — i.e. the model predicts one "next token" for the entire prefix, matching the (prefix → next-token) pair structure of the dataset described above, rather than a full per-position language-modeling head.
 
-**Class:** `MY_GPT`
+### 7. `MY_GPT` — Full Wrapper
 
-```
-x = model(x)        # GPT2 decoder stack
-x = out_layer(x)     # AttentionPooling + Linear head
-return x
+```python
+class MY_GPT(nn.Module):
+    def __init__(self, embdim, vocab_size):
+        super().__init__()
+        self.out_layer = GPT2OutputHead(768, vocab_size)
+        self.model = GPT2(vocab_size=vocab_size)
+
+    def forward(self, x):
+        x = self.model(x)      # (B, T) → (B, T, 768)
+        x = self.out_layer(x)   # (B, T, 768) → (B, vocab_size)
+        return x
 ```
 
 ---
 
 ## Training Pipeline
 
-- **Loss Function:** `CrossEntropyLoss()`
-- **Optimizer:** Adam, Learning Rate = 6e-4
-- **Execution:** Epochs = 1, Batch Size = 4
+- **Loss:** `CrossEntropyLoss()` comparing the `(B, vocab_size)` pooled prediction against the single next-token target `y`.
+- **Optimizer:** Adam, learning rate `6e-4`.
+- **Accuracy:** custom `accuracy_fn()` comparing `argmax(logits)` to the target token.
+- **Execution:** 1 epoch, batch size 4.
 
 ---
 
@@ -197,6 +239,10 @@ return x
 
 Saved under `models/` directory:
 
-- `GPT.pth`
-- `GPT_outlayer.pth`
-- `MY_GPT.pth`
+| File | Size |
+|---|---|
+| `GPT.pth` | 368 MB |
+| `GPT_outlayer.pth` | 114 MB |
+| `MY_GPT.pth` | 482 MB |
+
+Not stored in this repository due to size — regenerate by running the notebook end-to-end.
