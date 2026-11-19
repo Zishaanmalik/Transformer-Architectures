@@ -1,0 +1,153 @@
+participant_id,trial,label,event,time_from_start_sec,note
+P07,0,P,sync_marker,0.0,Blink for EEG synchronization
+P07,1,P,prepare_start,3.0051,Prepare
+P07,1,P,prepare_end,6.9831,Prepare end
+P07,1,P,task_start,6.9832,Silent imagination of P
+P07,1,P,task_end,16.9884,Task end
+P07,1,P,rest_start,16.9885,Rest
+P07,1,P,rest_end,22.9341,Rest end
+P07,2,P,prepare_start,22.9342,Prepare
+P07,2,P,prepare_end,26.9372,Prepare end
+P07,2,P,task_start,26.9372,Silent imagination of P
+P07,2,P,task_end,36.9424,Task end
+P07,2,P,rest_start,36.9426,Rest
+P07,2,P,rest_end,42.8897,Rest end
+P07,3,P,prepare_start,42.8897,Prepare
+P07,3,P,prepare_end,46.8893,Prepare end
+P07,3,P,task_start,46.8893,Silent imagination of P
+P07,3,P,task_end,56.8936,Task end
+P07,3,P,rest_start,56.8937,Rest
+P07,3,P,rest_end,62.8402,Rest end
+P07,4,P,prepare_start,62.8402,Prepare
+P07,4,P,prepare_end,66.8398,Prepare end
+P07,4,P,task_start,66.8399,Silent imagination of P
+P07,4,P,task_end,76.8429,Task end
+P07,4,P,rest_start,76.843,Rest
+P07,4,P,rest_end,82.7888,Rest end
+P07,5,P,prepare_start,82.7889,Prepare
+P07,5,P,prepare_end,86.7915,Prepare end
+P07,5,P,task_start,86.7916,Silent imagination of P
+P07,5,P,task_end,96.7967,Task end
+P07,5,P,rest_start,96.7969,Rest
+P07,5,P,rest_end,102.7434,Rest end
+P07,6,P,prepare_start,102.7435,Prepare
+P07,6,P,prepare_end,106.7443,Prepare end
+P07,6,P,task_start,106.7443,Silent imagination of P
+P07,6,P,task_end,116.7491,Task end
+P07,6,P,rest_start,116.7493,Rest
+P07,6,P,rest_end,122.6957,Rest end
+P07,7,P,prepare_start,122.6957,Prepare
+P07,7,P,prepare_end,126.6975,Prepare end
+P07,7,P,task_start,126.6975,Silent imagination of P
+P07,7,P,task_end,136.7027,Task end
+P07,7,P,rest_start,136.7029,Rest
+P07,7,P,rest_end,142.6497,Rest end
+P07,8,P,prepare_start,142.6498,Prepare
+P07,8,P,prepare_end,146.6495,Prepare end
+P07,8,P,task_start,146.6495,Silent imagination of P
+P07,8,P,task_end,156.6502,Task end
+P07,8,P,rest_start,156.6503,Rest
+P07,8,P,rest_end,162.5973,Rest end
+P07,9,P,prepare_start,162.5974,Prepare
+P07,9,P,prepare_end,166.6014,Prepare end
+P07,9,P,task_start,166.6014,Silent imagination of P
+P07,9,P,task_end,176.6066,Task end
+P07,9,P,rest_start,176.6068,Rest
+P07,9,P,rest_end,182.5542,Rest end
+P07,10,P,prepare_start,182.5543,Prepare
+P07,10,P,prepare_end,186.5542,Prepare end
+P07,10,P,task_start,186.5542,Silent imagination of P
+P07,10,P,task_end,196.5594,Task end
+P07,10,P,rest_start,196.5595,Rest
+P07,10,P,rest_end,202.5012,Rest end
+P07,11,P,prepare_start,202.5013,Prepare
+P07,11,P,prepare_end,206.5035,Prepare end
+P07,11,P,task_start,206.5035,Silent imagination of P
+P07,11,P,task_end,216.5087,Task end
+P07,11,P,rest_start,216.5089,Rest
+P07,11,P,rest_end,222.4539,Rest end
+P07,12,P,prepare_start,222.4539,Prepare
+P07,12,P,prepare_end,226.4549,Prepare end
+P07,12,P,task_start,226.4549,Silent imagination of P
+P07,12,P,task_end,236.4591,Task end
+P07,12,P,rest_start,236.4592,Rest
+P07,12,P,rest_end,242.406,Rest end
+P07,13,P,prepare_start,242.406,Prepare
+P07,13,P,prepare_end,246.406,Prepare end
+P07,13,P,task_start,246.4061,Silent imagination of P
+P07,13,P,task_end,256.4113,Task end
+P07,13,P,rest_start,256.4114,Rest
+P07,13,P,rest_end,262.3578,Rest end
+P07,14,P,prepare_start,262.3579,Prepare
+P07,14,P,prepare_end,266.3607,Prepare end
+P07,14,P,task_start,266.3608,Silent imagination of P
+P07,14,P,task_end,276.366,Task end
+P07,14,P,rest_start,276.3661,Rest
+P07,14,P,rest_end,282.3136,Rest end
+P07,15,P,prepare_start,282.3136,Prepare
+P07,15,P,prepare_end,286.3168,Prepare end
+P07,15,P,task_start,286.3168,Silent imagination of P
+P07,15,P,task_end,296.322,Task end
+P07,15,P,rest_start,296.3222,Rest
+P07,15,P,rest_end,302.2707,Rest end
+P07,16,P,prepare_start,302.2708,Prepare
+P07,16,P,prepare_end,306.2707,Prepare end
+P07,16,P,task_start,306.2708,Silent imagination of P
+P07,16,P,task_end,316.2734,Task end
+P07,16,P,rest_start,316.2735,Rest
+P07,16,P,rest_end,322.2232,Rest end
+P07,17,P,prepare_start,322.2233,Prepare
+P07,17,P,prepare_end,326.2224,Prepare end
+P07,17,P,task_start,326.2225,Silent imagination of P
+P07,17,P,task_end,336.2277,Task end
+P07,17,P,rest_start,336.2278,Rest
+P07,17,P,rest_end,342.1736,Rest end
+P07,18,P,prepare_start,342.1736,Prepare
+P07,18,P,prepare_end,346.1743,Prepare end
+P07,18,P,task_start,346.1744,Silent imagination of P
+P07,18,P,task_end,356.1796,Task end
+P07,18,P,rest_start,356.1797,Rest
+P07,18,P,rest_end,362.1273,Rest end
+P07,19,P,prepare_start,362.1274,Prepare
+P07,19,P,prepare_end,366.1291,Prepare end
+P07,19,P,task_start,366.1292,Silent imagination of P
+P07,19,P,task_end,376.1344,Task end
+P07,19,P,rest_start,376.1345,Rest
+P07,19,P,rest_end,382.0767,Rest end
+P07,20,P,prepare_start,382.0768,Prepare
+P07,20,P,prepare_end,386.0747,Prepare end
+P07,20,P,task_start,386.0747,Silent imagination of P
+P07,20,P,task_end,396.0799,Task end
+P07,20,P,rest_start,396.0801,Rest
+P07,20,P,rest_end,402.025,Rest end
+P07,21,P,prepare_start,402.0251,Prepare
+P07,21,P,prepare_end,406.0287,Prepare end
+P07,21,P,task_start,406.0288,Silent imagination of P
+P07,21,P,task_end,416.034,Task end
+P07,21,P,rest_start,416.0341,Rest
+P07,21,P,rest_end,421.9807,Rest end
+P07,22,P,prepare_start,421.9808,Prepare
+P07,22,P,prepare_end,425.9796,Prepare end
+P07,22,P,task_start,425.9796,Silent imagination of P
+P07,22,P,task_end,435.9848,Task end
+P07,22,P,rest_start,435.9849,Rest
+P07,22,P,rest_end,441.9375,Rest end
+P07,23,P,prepare_start,441.9376,Prepare
+P07,23,P,prepare_end,445.9398,Prepare end
+P07,23,P,task_start,445.9399,Silent imagination of P
+P07,23,P,task_end,455.9451,Task end
+P07,23,P,rest_start,455.9452,Rest
+P07,23,P,rest_end,461.8911,Rest end
+P07,24,P,prepare_start,461.8911,Prepare
+P07,24,P,prepare_end,465.8934,Prepare end
+P07,24,P,task_start,465.8934,Silent imagination of P
+P07,24,P,task_end,475.8986,Task end
+P07,24,P,rest_start,475.8987,Rest
+P07,24,P,rest_end,481.8458,Rest end
+P07,25,P,prepare_start,481.8459,Prepare
+P07,25,P,prepare_end,485.8463,Prepare end
+P07,25,P,task_start,485.8464,Silent imagination of P
+P07,25,P,task_end,495.8516,Task end
+P07,25,P,rest_start,495.8517,Rest
+P07,25,P,rest_end,501.8004,Rest end
+P07,0,P,session_end,504.3446,Session end
