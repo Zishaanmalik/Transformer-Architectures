@@ -19,6 +19,7 @@ Each notebook lives in its own folder, with its own dedicated README (in that fo
 | `ASR-Transformer/` | `ASR-Transfomer.ipynb` | Encoder-Decoder (Conformer + Decoder) | Automatic Speech Recognition |
 | `BSR-VIT/` | `BSR-VIT.ipynb` | Encoder-Decoder (Conformer + Decoder) | Brain Signal Recognition (EEG → Text) |
 | `Diffusion/` | `Deffision.ipynb` | Transformer Text Encoder + UNet (Cross-Attention Diffusion) | Text-Conditioned Image Generation |
+| `BSR Signals to Symbol/` | `data_char.ipynb`, `BSR-Char.ipynb`, `BSR-Char_head12.ipynb`, `BSR-Char_stack8.ipynb` | Encoder-only, Conformer-style (FFN → CNN → MHSA → CNN → FFN blocks) | EEG Character Classification (5 letters: A, K, N, P, Z) |
 
 > Each subfolder's README documents that notebook's exact architecture — every module explained individually with its real code, its math, and its exact input/output tensor shapes — derived directly from the implementation, not summarized at a high level.
 
@@ -40,6 +41,8 @@ Each notebook lives in its own folder, with its own dedicated README (in that fo
 ### Encoder-Only Models
 - **BERT** — bidirectional self-attention encoder trained with Masked Language Modeling on the Complete Works of Shakespeare. Notably uses **per-head independent attention weights** (each of the 8 heads is its own separate `SelfAttention` module) rather than a single shared projection split across heads.
 - **Conformer (Image Classifier)** — a Conformer encoder (macaron feed-forward + multi-head self-attention + convolution module) repurposed as a per-patch image classifier over chest X-ray scans, benchmarked in the same notebook against from-scratch FFN and CNN baselines.
+
+- **BSR Signals to Symbol** — a Conformer-style encoder where every block is `FFN → CNN → MHSA → CNN → FFN` (each sub-layer with its own residual + LayerNorm), classifying 10-second, 15-channel EEG recordings of *imagined letters* into 5 classes. The folder holds four notebooks: one **data-creation** notebook (raw OpenBCI recordings → 156 windows × 120 features per trial) and three **identical model notebooks that differ only in hyperparameters** (8 heads / 4 blocks, 12 heads / 4 blocks, 8 heads / 8 blocks), enabling a direct head-count and depth comparison (97.60%, 91.80%, and 97.40% test accuracy respectively).
 
 ### Decoder-Only Models
 - **GPT-2** — causal, masked self-attention decoder trained with next-token prediction on Human ↔ AI conversational data. Uses an **attention-pooling output head** that collapses the whole sequence into one vector before the final vocabulary projection, rather than a standard per-position LM head.
@@ -71,6 +74,7 @@ Across the notebooks, the following components are reimplemented from scratch an
 | `AddResidual_LayerNorm` | Pre-norm residual wrapper | BERT, GPT-2 |
 | `EncoderBlock` / `DecoderBlock` / `ConformerBlock` / `DownBlock` / `UpBlock` / `MidBlock` | Stacked architecture-specific layers | — |
 | `VocabHead` / `MLMHead` / `LMHead` / `GPT2OutputHead` | Task-specific output projection | Per-token (most notebooks) vs. sequence-pooled (GPT-2) vs. per-class (Conformer classifier) |
+| `InputBlock` / `CNN` (Conv1d over time) / `MHSA` (built-in `nn.MultiheadAttention`) / `TransformerBlock` | Window-level EEG embedding, local temporal convolution, global attention, and the `FFN → CNN → MHSA → CNN → FFN` block | BSR Signals to Symbol only (post-norm residuals, no positional encoding, mean-pooled output head) |
 | `SimpleNoiseScheduler` | DDPM linear beta schedule + closed-form forward diffusion | Diffusion notebook only |
 
 ---
@@ -82,6 +86,7 @@ Across the notebooks, the following components are reimplemented from scratch an
 - `datasets` (HuggingFace, for dataset loading only — not model code)
 - `librosa` (ASR notebook — audio feature extraction)
 - `torchvision` (Diffusion notebook — image transforms)
+- `scikit-learn` (BSR Signals to Symbol — train/test split and metrics), `plotly` (3D EEG visualization)
 - `numpy`, `pandas`, `matplotlib`, `seaborn`, `Pillow`
 
 ---
@@ -95,4 +100,5 @@ Due to file size constraints, trained model weights (`.pth` files) are **not sto
 ## Notes
 
 - All hyperparameters, tensor shape transitions, masking strategies, and parameter totals documented in each subfolder README are derived directly from the corresponding notebook's actual code — including non-obvious or non-standard design choices (e.g. BERT's per-head attention weights, GPT-2's pooled output head, unused/dead-code layers left in place) — so that every architectural decision is fully transparent and traceable to the source.
+- The BSR Signals to Symbol README also documents the dataset construction in detail (channel selection, windowing arithmetic, verification checks) and lists the exact result tables for all three model variants.
 - Notebooks are exploratory/research artifacts: they include data preprocessing, architecture definition, a working forward-pass sanity check, and a training loop, in that order, with some cells showing iterative fixes (e.g. two versions of a class or function kept side by side) that are called out explicitly in the relevant subfolder README rather than silently omitted.
